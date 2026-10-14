@@ -121,34 +121,14 @@
     await settled(current, () => pageNumber() === expected && rows().map(r => r.id).join('|') !== ids);
     return true;
   }
-  async function firstPage(current) {
-    while (pageNumber() > 1) {
-      if (!await go(current, 'prev')) throw Error('Não foi possível voltar à primeira página.');
-    }
-  }
-  async function collect(current) {
+  async function prepare(current) {
     await pause(current, Math.max(0, 600 - (Date.now() - submittedAt)));
-    await settled(current);
-    if ([...document.querySelectorAll('.batch-search .ssc-dialog-wrapper')].some(visible)) throw Error('Aguarde o SPX concluir a pesquisa em lote.');
-    await firstPage(current);
-    const total = count(), size = pageSize(), ids = new Set();
+    await wait(current, () => !busy() && ![...document.querySelectorAll('.batch-search .ssc-dialog-wrapper')].some(visible), 'Aguarde o SPX concluir a pesquisa em lote.');
+    const total = count();
     if (!total) throw Error('A pesquisa não retornou pedidos para excluir.');
     if (total > current.scope.size) throw Error('O total excede a lista pesquisada. Processo interrompido.');
-    for (let n = 1; n <= Math.ceil(total / size); n++) {
-      check(current);
-      if (pageNumber() !== n || count() !== total || pageSize() !== size) throw Error('Resultados mudaram durante a conferência.');
-      const list = rows(); validateRows(current, list);
-      if (list.length !== Math.min(size, total - ids.size)) throw Error('A página não contém a quantidade esperada de pedidos.');
-      for (const row of list) {
-        if (ids.has(row.id)) throw Error('Pedido repetido entre as páginas.');
-        ids.add(row.id);
-      }
-      message = `Conferindo pesquisa: ${ids.size} de ${total} pedidos. Nenhuma exclusão iniciada.`; update();
-      if (n < Math.ceil(total / size) && !await go(current, 'next')) throw Error('Não foi possível conferir todas as páginas.');
-    }
-    if (ids.size !== total) throw Error('A lista completa não pôde ser conferida.');
-    await firstPage(current);
-    return ids;
+    validateRows(current, rows());
+    return total;
   }
   async function erase(current, row, remaining) {
     check(current);
@@ -165,7 +145,7 @@
     const before = count();
     current.confirmed = true;
     confirm[0].click();
-    await settled(current, () => !visible(box) && count() === before - 1 && !rows().some(r => r.id === row.id), 50);
+    await wait(current, () => !busy() && !visible(box) && count() === before - 1 && !rows().some(r => r.id === row.id), 'O SPX não concluiu a atualização da tabela.');
     current.awaitingDialog = false;
     remaining.delete(row.id); current.deleted++;
   }
@@ -174,12 +154,14 @@
     const current = {controller: new AbortController(), scope, deleted: 0, awaitingDialog: false, confirmed: false, existingBoxes: new Set()};
     run = current; update();
     try {
-      const remaining = await collect(current), total = remaining.size;
-      while (remaining.size) {
-        check(current); if (busy()) await settled(current);
-        if (count() !== remaining.size) throw Error('O total mudou fora do processo. Exclusão interrompida.');
+      const total = await prepare(current), remaining = new Set(current.scope);
+      while (current.deleted < total) {
+        check(current);
+        if (busy()) await wait(current, () => !busy(), 'O SPX não concluiu a atualização da tabela.');
+        if (count() !== total - current.deleted) throw Error('O total mudou fora do processo. Exclusão interrompida.');
         const list = rows(); validateRows(current, list, remaining);
         if (!list.length) {
+          if (!disabled(pager().querySelector('.pager-next'))) { await go(current, 'next'); continue; }
           if (pageNumber() > 1) { await go(current, 'prev'); continue; }
           throw Error('Pedidos restantes não estão disponíveis na tabela.');
         }

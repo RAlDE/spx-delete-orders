@@ -1,1 +1,1 @@
-{"name":"spx-delete-orders","version":"0.1.1","private":true,"scripts":{"test":"node tests/simulate.cjs && node tests/drag.cjs"},"devDependencies":{"jsdom":"30.1.2","@sinonjs/fake-timers":"15.4.0"}}
+{"name":"spx-delete-orders","version":"0.1.2","private":true,"scripts":{"test":"node tests/simulate.cjs && node tests/drag.cjs"},"devDependencies":{"jsdom":"30.1.2","@sinonjs/fake-timers":"15.4.0"}}

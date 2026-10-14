@@ -1,4 +1,4 @@
-# DEL SPX — versão de teste 0.1.1
+# DEL SPX — versão de teste 0.1.2
 
 ## Instalar no Chrome ou Edge
 
@@ -16,7 +16,7 @@
 3. Aguarde o resultado da pesquisa.
 4. Clique no ícone DEL para abrir a caixa e depois em Iniciar exclusão.
 5. Você pode mover a caixa arrastando o cabeçalho DEL / Excluir pesquisa.
-6. A ferramenta primeiro confere todas as páginas, sem excluir. Depois exclui um pedido por vez, verificando a atualização da tabela.
+6. A ferramenta começa a excluir na página atual, um pedido por vez, conferindo os BRs e a atualização da tabela. Continua até terminar os resultados da pesquisa, sem varrer todas as páginas antes de começar.
 
 A pesquisa precisa ter sido enviada depois que a extensão passou a funcionar na aba. Se Iniciar estiver desabilitado, faça a pesquisa em lote novamente. Não é necessário manter a caixa aberta durante a pesquisa.
 

@@ -2,7 +2,7 @@
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 root = Path(__file__).resolve().parents[1]
-out = root.parent / 'output' / 'DEL-SPX-v0.1.1-teste.zip'
+out = root.parent / 'output' / 'DEL-SPX-v0.1.2-teste.zip'
 out.parent.mkdir(exist_ok=True)
 with ZipFile(out, 'w', ZIP_DEFLATED) as z:
     for file in sorted((root / 'extension').rglob('*')):
