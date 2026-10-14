@@ -1,30 +1,37 @@
 # SPX Delete Orders — DEL
 
-Extensão para excluir somente os pedidos retornados pela pesquisa aplicada na tela Roteirizar → Pedidos para roteirizar do SPX.
+Extensão Chrome/Edge (Manifest V3) para excluir somente os pedidos retornados pela **Pesquisa em lote** na tela **Roteirizar → Pedidos para roteirizar** do SPX.
 
-## Requisitos
+**Versão 0.1.0 de teste.** A lógica foi verificada em simulação DOM. A compatibilidade final dos seletores e o comportamento do sistema precisam ser conferidos no SPX real. Nenhuma operação foi realizada em uma sessão real durante o desenvolvimento.
 
-- Ícone DEL com letras brancas sobre fundo laranja.
-- Caixa com os botões de iniciar e parar, aberta somente ao clicar no ícone da extensão.
-- Abrir a página ou pesquisar não abre a caixa e não inicia exclusões.
-- Excluir todos os pedidos da pesquisa, incluindo as páginas seguintes, sem limite fixo de 24.
-- Funcionar com a visualização de 24, 40 ou 50 itens por página.
-- Identificar os códigos dos pedidos de todo o resultado antes de iniciar a exclusão; excluir somente códigos desse conjunto. Não usar apenas a quantidade como limite de segurança.
-- Interromper se a pesquisa mudar, se sair da tela ou se não for possível identificar os resultados com segurança.
-- Verificar o sucesso de cada exclusão antes de contabilizá-la e aguardar a atualização da tabela.
-- Impedir execuções simultâneas e manter o controle de parada disponível.
-- Remover toda navegação para Entrada, Recebimento e Single Receive.
-- Permanecer na tela de pedidos ao finalizar.
-- Entregar ZIP instalável pelo modo de desenvolvedor do Chrome/Edge em vários PCs. Atualizar o GitHub não atualiza automaticamente as instalações.
+## Funcionamento
 
-## Revisão do código original
+- Ícone DEL branco sobre laranja; caixa aberta exclusivamente pelo ícone.
+- Registra silenciosamente os códigos enviados na Pesquisa em lote, sem abrir a caixa nem iniciar exclusões.
+- Ao iniciar, confere todos os resultados e suas páginas antes de excluir. Se encontrar um pedido fora da lista enviada, não inicia exclusões.
+- Sem limite fixo de 24; suporta os tamanhos de 24, 40 e 50 por página.
+- Exclui somente códigos da lista conferida, um por vez. Confere redução do total e desaparecimento da linha antes de contabilizar o sucesso.
+- Não acessa Entrada ou Recebimento.
+- PARAR e fechar a caixa abortam as esperas e impedem novos cliques. Tentam cancelar a confirmação aberta pelo processo. Solicitações já enviadas ao SPX podem terminar.
+- Redefinir, nova pesquisa, edição de filtros e mudança de rota interrompem o processo. A pesquisa em lote deve ser refeita para registrar um novo conjunto.
+- Impede execuções simultâneas e falha sem clicar quando a identificação fica ambígua.
 
-O original abre o popup pelo ícone, mas possui limite fixo de 24, não trata a paginação e não protege o conjunto de pedidos pesquisados. Escolhe o botão Excluir pela posição, usa um seletor global para confirmação, conta cada clique em confirmar como sucesso e espera apenas 300 ms entre operações. Não verifica a tela correta ou execuções simultâneas. Fechar e reabrir o popup perde o estado de controle, embora a automação possa continuar. A etapa final navega para Recebimento e será removida.
+A extensão deve estar ativa antes de clicar em Enviar na Pesquisa em lote. Após instalar, recarregar a extensão ou atualizar a aba, refaça a pesquisa. Não deduz que uma tabela com poucos pedidos seja um resultado filtrado.
 
-## Estado
+## Instalação e ZIP
 
-Requisitos definidos. Ainda não há versão instalável validada. O HTML real da tabela, da paginação, dos filtros e do diálogo de exclusão precisa ser conferido antes de validar os seletores.
+Veja [INSTALACAO.md](INSTALACAO.md). No download do repositório, a pasta instalável é **extension**. No ZIP gerado pelo script, ela se chama **DEL-SPX**.
 
-## Validação prevista
+Execute `python3 scripts/package.py` para gerar o ZIP com os arquivos da extensão e as instruções. Atualizações devem ser recarregadas em cada PC.
 
-Simular 10, 24, 50, 100 e 400 resultados; diferentes tamanhos de página; redistribuição de linhas após excluir; respostas lentas; falhas de exclusão; mudança da pesquisa; parada e reabertura; tentativa de execução simultânea; pedidos fora do conjunto inicial. Seletores ambíguos devem interromper o processo, nunca causar cliques por aproximação. Validar depois a compatibilidade com a tela real do SPX.
+## Testes
+
+Node 22 ou superior: `npm install` e `npm test`. A simulação usa jsdom e relógios virtuais, com as mesmas classes observadas no HTML fornecido. Não se conecta ao SPX.
+
+Casos: 10, 24, 50, 100 e 400 pedidos; tamanhos 24/40/50; reposição de linhas após exclusão; parada durante conferência, antes do diálogo e com diálogo aberto; parada/fechamento/Redefinir após envio de uma exclusão; resultado fora da lista na segunda página; falha de exclusão; ausência de pesquisa registrada; duplo início.
+
+Limites: a geometria de visibilidade é simulada e os diálogos são reproduzidos a partir dos seletores e textos observados; o servidor real pode apresentar outros estados. Uma demora superior a 15 segundos encerra o processo para revisão. A contagem mostra somente exclusões verificadas; após uma parada, a última solicitação enviada pode concluir sem ser contabilizada.
+
+## Privacidade
+
+Não há envio de dados para servidores da extensão, telemetria ou armazenamento persistente dos códigos. A lista fica apenas na memória da aba. O monitoramento roda somente no domínio spx.shopee.com.br; o processamento é restrito à rota lmRouteCollectionPool. Capturas e HTML reais com códigos de pedidos não integram o repositório ou o ZIP.

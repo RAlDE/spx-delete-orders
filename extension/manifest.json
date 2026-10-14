@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "DEL — Exclusão de pedidos SPX",
+  "version": "0.1.0",
+  "description": "Exclui somente os resultados da pesquisa em lote, com controle de parada.",
+  "permissions": ["activeTab", "scripting"],
+  "background": {"service_worker": "background.js"},
+  "action": {"default_title": "DEL — Abrir controle", "default_icon": {"16":"icons/del16.png","48":"icons/del48.png","128":"icons/del128.png"}},
+  "icons": {"16":"icons/del16.png","48":"icons/del48.png","128":"icons/del128.png"},
+  "content_scripts": [{"matches":["https://spx.shopee.com.br/*"],"js":["content.js"],"run_at":"document_start"}]
+}
