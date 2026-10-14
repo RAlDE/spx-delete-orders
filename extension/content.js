@@ -93,17 +93,17 @@
       check(current);
       const result = predicate();
       if (result) return result;
-      await pause(current, 50);
+      await pause(current, 25);
     }
     throw Error(failure);
   }
-  async function settled(current, condition = () => true) {
+  async function settled(current, condition = () => true, stabilityMs = 250) {
     let last = '', stableSince = 0;
     return wait(current, () => {
       if (busy() || !condition()) { stableSince = 0; return false; }
       const signature = JSON.stringify([pageNumber(), count(), pageSize(), rows().map(r => r.id)]);
       if (signature !== last || !stableSince) { last = signature; stableSince = Date.now(); return false; }
-      return Date.now() - stableSince >= 250;
+      return Date.now() - stableSince >= stabilityMs;
     }, 'O SPX não concluiu a atualização da tabela.');
   }
   function validateRows(current, list, remaining = null) {
@@ -165,7 +165,7 @@
     const before = count();
     current.confirmed = true;
     confirm[0].click();
-    await settled(current, () => !visible(box) && count() === before - 1 && !rows().some(r => r.id === row.id));
+    await settled(current, () => !visible(box) && count() === before - 1 && !rows().some(r => r.id === row.id), 50);
     current.awaitingDialog = false;
     remaining.delete(row.id); current.deleted++;
   }
@@ -176,7 +176,7 @@
     try {
       const remaining = await collect(current), total = remaining.size;
       while (remaining.size) {
-        check(current); await settled(current);
+        check(current); if (busy()) await settled(current);
         if (count() !== remaining.size) throw Error('O total mudou fora do processo. Exclusão interrompida.');
         const list = rows(); validateRows(current, list, remaining);
         if (!list.length) {
@@ -198,11 +198,31 @@
     host = document.createElement('div'); host.id = 'spx-del-panel';
     host.style.cssText = 'position:fixed;right:20px;top:100px;z-index:2147483647;';
     const shadow = host.attachShadow({mode: 'open'});
-    shadow.innerHTML = `<style>:host{font-family:Arial,sans-serif}section{width:290px;padding:18px;background:#f5f6f9;color:#172b48;border:1px solid #ddd;border-radius:8px;box-shadow:0 8px 30px #0004}header{display:flex;align-items:center;gap:10px}b{background:#ee4d2d;color:white;padding:7px;border-radius:5px}h2{font-size:16px;margin:0;flex:1}button{cursor:pointer;font:600 14px Arial}#close{border:0;background:none;font-size:22px}p{font-size:12px;line-height:1.5;color:#5d6b7f}#start,#stop{width:100%;padding:12px;border-radius:6px;margin-top:8px}#start{background:#ee4d2d;color:white;border:0}#stop{background:#fff;color:#b72e16;border:2px solid #ee4d2d}button:disabled{opacity:.45;cursor:default}#status{font-size:13px;line-height:1.5;margin-top:14px;white-space:pre-wrap}</style><section><header><b>DEL</b><h2>Excluir pesquisa</h2><button id="close" aria-label="Fechar e parar">×</button></header><p>Exclui somente pedidos da pesquisa em lote, em todas as páginas.</p><p id="scope"></p><button id="start">Iniciar exclusão</button><button id="stop">PARAR</button><div id="status" role="status" aria-live="polite"></div><p>Parar bloqueia os próximos cliques. Uma exclusão já enviada ao SPX pode terminar.</p></section>`;
+    shadow.innerHTML = `<style>:host{font-family:Arial,sans-serif}section{width:290px;padding:18px;background:#f5f6f9;color:#172b48;border:1px solid #ddd;border-radius:8px;box-shadow:0 8px 30px #0004}header{display:flex;align-items:center;gap:10px;cursor:move;user-select:none;touch-action:none}b{background:#ee4d2d;color:white;padding:7px;border-radius:5px}h2{font-size:16px;margin:0;flex:1}button{cursor:pointer;font:600 14px Arial}#close{border:0;background:none;font-size:22px}p{font-size:12px;line-height:1.5;color:#5d6b7f}#start,#stop{width:100%;padding:12px;border-radius:6px;margin-top:8px}#start{background:#ee4d2d;color:white;border:0}#stop{background:#fff;color:#b72e16;border:2px solid #ee4d2d}button:disabled{opacity:.45;cursor:default}#status{font-size:13px;line-height:1.5;margin-top:14px;white-space:pre-wrap}</style><section><header><b>DEL</b><h2>Excluir pesquisa</h2><button id="close" aria-label="Fechar e parar">×</button></header><p>Exclui somente pedidos da pesquisa em lote, em todas as páginas.</p><p id="scope"></p><button id="start">Iniciar exclusão</button><button id="stop">PARAR</button><div id="status" role="status" aria-live="polite"></div><p>Parar bloqueia os próximos cliques. Uma exclusão já enviada ao SPX pode terminar.</p></section>`;
     document.documentElement.append(host);
     ui = Object.fromEntries(['start','stop','scope','status'].map(id => [id,shadow.getElementById(id)]));
     shadow.getElementById('close').onclick = toggle;
-    ui.stop.onclick = () => stop(); ui.start.onclick = start; update();
+    ui.stop.onclick = () => stop(); ui.start.onclick = start;
+    const handle = shadow.querySelector('header');
+    let drag = null;
+    handle.addEventListener('pointerdown', event => {
+      if (event.button !== 0 || event.target.closest('button')) return;
+      const rect = host.getBoundingClientRect();
+      drag = {id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top};
+      host.style.left = `${rect.left}px`; host.style.right = 'auto';
+      handle.setPointerCapture(event.pointerId); event.preventDefault();
+    });
+    handle.addEventListener('pointermove', event => {
+      if (!drag || event.pointerId !== drag.id || !host) return;
+      const rect = host.getBoundingClientRect();
+      host.style.left = `${Math.max(0, Math.min(innerWidth - rect.width, drag.left + event.clientX - drag.x))}px`;
+      host.style.top = `${Math.max(0, Math.min(innerHeight - rect.height, drag.top + event.clientY - drag.y))}px`;
+    });
+    const endDrag = event => { if (drag?.id === event.pointerId) drag = null; };
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+    handle.addEventListener('lostpointercapture', endDrag);
+    update();
   }
   // Monitoramento sem abrir a caixa e sem iniciar exclusões.
   document.addEventListener('click', event => {

@@ -2,11 +2,15 @@
 
 Extensão Chrome/Edge (Manifest V3) para excluir somente os pedidos retornados pela **Pesquisa em lote** na tela **Roteirizar → Pedidos para roteirizar** do SPX.
 
-**Versão 0.1.0 de teste.** A lógica foi verificada em simulação DOM. A compatibilidade final dos seletores e o comportamento do sistema precisam ser conferidos no SPX real. Nenhuma operação foi realizada em uma sessão real durante o desenvolvimento.
+**Versão 0.1.1 de teste.** A lógica foi verificada em simulação DOM. A compatibilidade final dos seletores e o comportamento do sistema precisam ser conferidos no SPX real. Nenhuma operação foi realizada em uma sessão real durante o desenvolvimento.
+
+## Atualização 0.1.1
+
+Reduz a espera após a atualização confirmada de cada exclusão de 250 ms para 50 ms, verifica o estado a cada 25 ms e remove uma espera repetida antes da próxima exclusão. A conferência inicial de todas as páginas permanece. A velocidade final também depende da resposta do SPX.
 
 ## Funcionamento
 
-- Ícone DEL branco sobre laranja; caixa aberta exclusivamente pelo ícone.
+- Ícone DEL branco sobre laranja; caixa aberta exclusivamente pelo ícone e arrastável pelo cabeçalho.
 - Registra silenciosamente os códigos enviados na Pesquisa em lote, sem abrir a caixa nem iniciar exclusões.
 - Ao iniciar, confere todos os resultados e suas páginas antes de excluir. Se encontrar um pedido fora da lista enviada, não inicia exclusões.
 - Sem limite fixo de 24; suporta os tamanhos de 24, 40 e 50 por página.

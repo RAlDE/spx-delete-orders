@@ -1,4 +1,4 @@
-# DEL SPX — versão de teste 0.1.0
+# DEL SPX — versão de teste 0.1.1
 
 ## Instalar no Chrome ou Edge
 
@@ -15,7 +15,8 @@
 2. Use Pesquisa em lote, cole os códigos BR e clique em Enviar. A extensão registra esses códigos sem abrir a caixa ou excluir pedidos.
 3. Aguarde o resultado da pesquisa.
 4. Clique no ícone DEL para abrir a caixa e depois em Iniciar exclusão.
-5. A ferramenta primeiro confere todas as páginas, sem excluir. Depois exclui um pedido por vez, verificando a atualização da tabela.
+5. Você pode mover a caixa arrastando o cabeçalho DEL / Excluir pesquisa.
+6. A ferramenta primeiro confere todas as páginas, sem excluir. Depois exclui um pedido por vez, verificando a atualização da tabela.
 
 A pesquisa precisa ter sido enviada depois que a extensão passou a funcionar na aba. Se Iniciar estiver desabilitado, faça a pesquisa em lote novamente. Não é necessário manter a caixa aberta durante a pesquisa.
 
