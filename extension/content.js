@@ -3,6 +3,9 @@
   if (globalThis.__spxDelInstalled) return;
   globalThis.__spxDelInstalled = true;
   const normalize = value => (value || '').replace(/\s+/g, ' ').trim();
+  // Extrai códigos inteiros; nunca aproveita um BR embutido em outro código.
+  const batchIds = value => (value.toUpperCase().match(/[\p{L}\p{N}_]+/gu) || [])
+    .filter(id => /^BR[A-Z0-9]+$/.test(id) && /\d/.test(id));
   const visible = el => !!el && el.isConnected && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
   const allowedRoute = () => location.hostname === 'spx.shopee.com.br' && /^#\/lmRouteCollectionPool(?:[/?]|$)/i.test(location.hash);
   let scope = null, submittedAt = 0, run = null, host = null, ui = null;
@@ -63,7 +66,17 @@
     ui.status.textContent = message;
     ui.start.disabled = !!run || !scope || !allowedRoute();
     ui.stop.disabled = !run;
-    ui.scope.textContent = scope ? `${scope.size} código(s) enviados na pesquisa em lote.` : 'Nenhuma pesquisa em lote registrada.';
+    let description = 'Nenhuma pesquisa em lote registrada.';
+    if (scope) {
+      description = `${scope.size} código(s) identificado(s) na pesquisa em lote.`;
+      try {
+        const total = count(), list = rows();
+        if (Date.now() - submittedAt >= 600 && !busy() && total <= scope.size && list.every(row => scope.has(row.id))) {
+          description += ` Total na pesquisa: ${total} pedido(s).`;
+        }
+      } catch { /* Não exibir um total sem identificar a tabela. */ }
+    }
+    ui.scope.textContent = description;
   }
   function stop(reason = 'Parado. Nenhuma nova exclusão será iniciada.') {
     if (run && !run.controller.signal.aborted) {
@@ -180,7 +193,7 @@
     host = document.createElement('div'); host.id = 'spx-del-panel';
     host.style.cssText = 'position:fixed;right:20px;top:100px;z-index:2147483647;';
     const shadow = host.attachShadow({mode: 'open'});
-    shadow.innerHTML = `<style>:host{font-family:Arial,sans-serif}section{width:290px;padding:18px;background:#f5f6f9;color:#172b48;border:1px solid #ddd;border-radius:8px;box-shadow:0 8px 30px #0004}header{display:flex;align-items:center;gap:10px;cursor:move;user-select:none;touch-action:none}b{background:#ee4d2d;color:white;padding:7px;border-radius:5px}h2{font-size:16px;margin:0;flex:1}button{cursor:pointer;font:600 14px Arial}#close{border:0;background:none;font-size:22px}p{font-size:12px;line-height:1.5;color:#5d6b7f}#start,#stop{width:100%;padding:12px;border-radius:6px;margin-top:8px}#start{background:#ee4d2d;color:white;border:0}#stop{background:#fff;color:#b72e16;border:2px solid #ee4d2d}button:disabled{opacity:.45;cursor:default}#status{font-size:13px;line-height:1.5;margin-top:14px;white-space:pre-wrap}</style><section><header><b>DEL</b><h2>Excluir pesquisa</h2><button id="close" aria-label="Fechar e parar">×</button></header><p>Exclui somente pedidos da pesquisa em lote, em todas as páginas.</p><p id="scope"></p><button id="start">Iniciar exclusão</button><button id="stop">PARAR</button><div id="status" role="status" aria-live="polite"></div><p>Parar bloqueia os próximos cliques. Uma exclusão já enviada ao SPX pode terminar.</p></section>`;
+    shadow.innerHTML = `<style>:host{font-family:Arial,sans-serif}section{width:290px;padding:18px;background:#f5f6f9;color:#172b48;border:1px solid #ddd;border-radius:8px;box-shadow:0 8px 30px #0004}header{display:flex;align-items:center;gap:10px;cursor:move;user-select:none;touch-action:none}b{background:#ee4d2d;color:white;padding:7px;border-radius:5px}h2{font-size:16px;margin:0;flex:1}button{cursor:pointer;font:600 14px Arial}#close{border:0;background:none;font-size:22px}p{font-size:12px;line-height:1.5;color:#5d6b7f}#start,#stop{width:100%;padding:12px;border-radius:6px;margin-top:8px}#start{background:#ee4d2d;color:white;border:0}#stop{background:#fff;color:#b72e16;border:2px solid #ee4d2d}button:disabled{opacity:.45;cursor:default}#status{font-size:13px;line-height:1.5;margin-top:14px;white-space:pre-wrap}</style><section><header><b>DEL</b><h2>Excluir pesquisa</h2><button id="close" aria-label="Fechar e parar">×</button></header><p>Exclui somente pedidos da pesquisa em lote, em todas as páginas.</p><p id="scope"></p><button id="start">Iniciar exclusão</button><button id="stop">PARAR</button><div id="status" role="status" aria-live="polite"></div><p>Parar bloqueia a exclusão</p></section>`;
     document.documentElement.append(host);
     ui = Object.fromEntries(['start','stop','scope','status'].map(id => [id,shadow.getElementById(id)]));
     shadow.getElementById('close').onclick = toggle;
@@ -214,9 +227,9 @@
     if (button?.matches('.batch-search button') && normalize(button.textContent) === 'Enviar') {
       invalidate('Nova pesquisa em lote registrada. Aguarde o resultado antes de iniciar.');
       const value = button.closest('.batch-search')?.querySelector('textarea')?.value || '';
-      const ids = value.trim().split(/\s+/).filter(Boolean).map(id => id.toUpperCase());
-      if (!ids.length || ids.length > 10000 || ids.some(id => !/^BR[A-Z0-9]+$/.test(id))) { message = 'Lista de códigos da pesquisa não reconhecida.'; update(); return; }
-      scope = new Set(ids); submittedAt = Date.now(); update(); return;
+      const ids = new Set(batchIds(value));
+      if (!ids.size || ids.size > 10000) { message = 'Nenhum BR válido identificado ou limite de 10.000 códigos excedido.'; update(); return; }
+      scope = ids; submittedAt = Date.now(); update(); setTimeout(update, 650); return;
     }
     if (target?.closest('.pro-filter .ssc-option') || button?.matches('.pro-filter-btn-cancel,.pro-filter-btn-confirm') || normalize(button?.textContent) === 'Pesquisa em lote') {
       invalidate('Pesquisa alterada ou redefinida. Processo interrompido. Faça a pesquisa em lote novamente.'); return;
@@ -234,4 +247,9 @@
     host?.remove(); host = null; ui = null;
   });
   chrome.runtime.onMessage.addListener(msg => { if (msg.type === 'DEL_TOGGLE') toggle(); });
+  let updateTimer = null;
+  new MutationObserver(() => {
+    if (!ui || updateTimer !== null) return;
+    updateTimer = setTimeout(() => { updateTimer = null; update(); }, 100);
+  }).observe(document, {subtree: true, childList: true, characterData: true, attributes: true});
 })();

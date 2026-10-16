@@ -1,4 +1,4 @@
-# DEL SPX — versão de teste 0.1.2
+# DEL SPX — versão de teste 0.1.3
 
 ## Instalar no Chrome ou Edge
 
@@ -12,7 +12,7 @@
 ## Usar
 
 1. Abra Roteirizar → Pedidos para roteirizar no SPX.
-2. Use Pesquisa em lote, cole os códigos BR e clique em Enviar. A extensão registra esses códigos sem abrir a caixa ou excluir pedidos.
+2. Use Pesquisa em lote, cole os códigos BR e clique em Enviar. Textos e outros códigos misturados são ignorados; SPXBR não é aceito pelo DEL. A extensão registra esses códigos sem abrir a caixa ou excluir pedidos.
 3. Aguarde o resultado da pesquisa.
 4. Clique no ícone DEL para abrir a caixa e depois em Iniciar exclusão.
 5. Você pode mover a caixa arrastando o cabeçalho DEL / Excluir pesquisa.

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DEL — Exclusão de pedidos SPX",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Exclui somente os resultados da pesquisa em lote, com controle de parada.",
   "permissions": ["activeTab", "scripting"],
   "background": {"service_worker": "background.js"},

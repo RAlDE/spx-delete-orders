@@ -2,7 +2,11 @@
 
 Extensão Chrome/Edge (Manifest V3) para excluir somente os pedidos retornados pela **Pesquisa em lote** na tela **Roteirizar → Pedidos para roteirizar** do SPX.
 
-**Versão 0.1.2 de teste.** A lógica foi verificada em simulação DOM. A compatibilidade final dos seletores e o comportamento do sistema precisam ser conferidos no SPX real. Nenhuma operação foi realizada em uma sessão real durante o desenvolvimento.
+**Versão 0.1.3 de teste.** A lógica foi verificada em simulação DOM. A compatibilidade final dos seletores e o comportamento do sistema precisam ser conferidos no SPX real. Nenhuma operação foi realizada em uma sessão real durante o desenvolvimento.
+
+## Atualização 0.1.3
+
+Reconhece somente códigos BR misturados com palavras e outros códigos na pesquisa em lote, ignora SPXBR e trechos sem rastreio e conta códigos únicos. Exibe também o total de pedidos retornado na tabela do SPX. O rodapé mostra “Parar bloqueia a exclusão”. Mantém as verificações de escopo e de parada.
 
 ## Atualização 0.1.2
 
